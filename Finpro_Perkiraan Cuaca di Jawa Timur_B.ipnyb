@@ -1,0 +1,133 @@
+import os
+import sys
+import requests
+import pandas as pd
+from datetime import datetime, timedelta
+from bs4 import BeautifulSoup as bs
+
+url = "https://data.bmkg.go.id/DataMKG/MEWS/DigitalForecast/DigitalForecast-JawaTimur.xml"
+response = requests.get(url,verify=False)
+r = response.text
+
+prakiraan = {'Pagi': '' , 'Siang': '', 'Malam': ''}
+kode = {
+'0': 'Cerah',
+'1': 'Cerah Berawan',
+'2': 'Cerah Berawan',
+'3': 'Berawan',
+'4': 'Berawan',
+'5': 'Udara Kabur',
+'10': 'Asap',
+'45': 'Kabut',
+'60': 'Hujan Ringan',
+'61': 'Hujan Sedang',
+'63': 'Hujan Lebat',
+'80': 'Hujan Lokal',
+'95': 'Hujan Petir',
+'97': 'Hujan Petir'
+}  
+
+JawaTimur = bs(r,"xml")
+
+def waktu_akan_datang(date_format="%A, %d %B %Y", add_days=''):
+    waktu_n_datang = datetime.now() + timedelta(days=add_days)
+    return waktu_n_datang.strftime(date_format)
+x = datetime.now()
+y = waktu_akan_datang(add_days= 1)
+a = x.strftime("%A, %d %B %Y").format(lang="ID")
+b_now = x.strftime("%Y%m%d")
+b_tom = waktu_akan_datang(date_format="%Y%m%d", add_days=1)
+
+def kembali():
+    print("\n")
+    input("Tekan tombol apa saja untuk kembali ke main menu ")
+    os.system('clear' if (os.name=='nt') else 'clear')
+while True:
+    print("========== SELAMAT DATANG DI PROGRAM PERKIRAAN CUACA JAWA TIMUR ==========")
+    print("Silahkan Pilih!\n1. Pilih Kota\n2. Keluar")
+    input1 = input("Masukkan Pilihan : ")
+    if (input1 == "1"):
+        nama_kota = ['Bangkalan', 'Banyuwangi', 'Batu', 'Bojonegoro', 'Bondowoso', 'Gresik', 'Jember', 'Jombang', 'Kabupaten Blitar', 'Kabupaten Kediri', 'Kabupaten Madiun', 'Kabupaten Malang', 'Kabupaten Mojokerto', 'Kabupaten Pasuruan', 'Kabupaten Probolinggo', 'Kota Blitar', 'Kota Kediri', 'Kota Madiun', 'Kota Malang', 'Kota Mojokerto', 'Kota Pasuruan', 'Kota Probolinggo', 'Lamongan', 'Lumajang', 'Magetan', 'Nganjuk', 'Ngawi', 'Pacitan', 'Pamekasan', 'Ponorogo', 'Sampang', 'Sidoarjo', 'Situbondo', 'Sumenep', 'Surabaya', 'Trenggalek', 'Tuban', 'Tulungaggung']
+        d = pd.DataFrame(nama_kota)
+        print(d)
+        kota = input("Kota :")
+        if kota in nama_kota:
+            cuacaJatim=JawaTimur.find(description=kota).find(id="weather")
+            h0 = cuacaJatim.find(h='0').value.string
+            h6 = cuacaJatim.find(h='6').value.string
+            h12 = cuacaJatim.find(h='12').value.string
+            h24 = cuacaJatim.find(h='24').value.string
+            h30 = cuacaJatim.find(h='30').value.string
+            h36 = cuacaJatim.find(h='36').value.string
+            h42 = cuacaJatim.find(h='42').value.string
+
+            tminJatim = JawaTimur.find(description=kota).find(id="tmin")
+            daynow = tminJatim.find(day=b_now).value.string
+            daytom = tminJatim.find(day=b_tom).value.string
+
+            tmaxJatim = JawaTimur.find(description=kota).find(id="tmax")
+            maxdayn = tmaxJatim.find(day=b_now).value.string
+            maxdayt = tmaxJatim.find(day=b_tom).value.string
+
+            huminJatim = JawaTimur.find(description=kota).find(id="humin")
+            humin_now = huminJatim.find(day=b_now).value.string
+            humin_tom = huminJatim.find(day=b_tom).value.string
+
+            humaxJatim = JawaTimur.find(description=kota).find(id="humax")
+            humax_now = humaxJatim.find(day=b_now).value.string
+            humax_tom = humaxJatim.find(day=b_tom).value.string
+
+            prakiraan['Pagi'] = kode[h0]
+            prakiraan['Siang'] = kode[h6]
+            prakiraan['Malam'] = kode[h12]
+            prakiraan['Besok Pagi'] = kode[h24]
+            prakiraan['Besok Siang'] = kode[h30]
+            prakiraan['Besok Malam'] = kode[h36]
+
+            print("=========== Perkiraan Cuaca Hari Ini Di {} ============".format(kota),
+                  "\n"
+                  "\nCUACA HARI INI",
+                  "\n{}".format(a),
+                  "\nPagi  : ",
+                  prakiraan['Pagi'],
+                  "\nSiang : ",
+                  prakiraan['Siang'],
+                  "\nMalam : ",
+                  prakiraan['Malam'],
+                  "\nTemperatur Minimal : ",
+                  daynow, 
+                  " Celcius", 
+                  "\nTemperature Maksimal : ",
+                  maxdayn,
+                  " Celcius",
+                  "\nKelembaban Minimal : ",
+                  humin_now,
+                  "\nKelembaban Maksimal : ",
+                  humax_now,
+                  "\n",
+                  "\nCUACA BESOK",
+                  "\n{}".format(y),
+                  "\nBesok Pagi : ",
+                  prakiraan['Besok Pagi'],
+                  "\nBesok Siang : ",
+                  prakiraan['Besok Siang'],
+                  "\nBesok Malam : ",
+                  prakiraan['Besok Malam'],
+                  "\nTemperatur Minimal : ",
+                  daytom,
+                  " Celcius",
+                  "\nTemperatur Maksimal : ",
+                  maxdayt,
+                  " Celcius",
+                  "\nKelembaban Minimal : ",
+                  humin_tom,
+                  "\nKelembaban Maksimal : ",
+                  humax_tom, " ")
+            kembali()
+        else:
+            print("Kota yang anda masukkan berada di luar Jawa Timur!")
+            kembali()
+    else:
+        print("Anda Telah Keluar Dari Sistem Kami")
+        break
+
